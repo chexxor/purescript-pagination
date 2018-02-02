@@ -3,7 +3,7 @@
   "scripts": {
     "clean": "rimraf output",
     "build": "psc-package build",
-    "test": "psc-package sources | xargs purs compile 'src/**/*.purs' 'github.com/**/*.purs' 'test/**/*.purs' && NODE_PATH=output:$NODE_PATH node -e \"require('Test.Main').main()\"",
+    "test": "psc-package sources | xargs purs compile 'src/**/*.purs' 'test/**/*.purs' && NODE_PATH=output:$NODE_PATH node -e \"require('Test.Main').main()\"",
     "repl": "psc-package repl"
   },
   "devDependencies": {
