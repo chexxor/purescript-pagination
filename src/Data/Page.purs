@@ -1,4 +1,4 @@
-module Data.Pagination where
+module Data.Page where
 
 import Prelude
 

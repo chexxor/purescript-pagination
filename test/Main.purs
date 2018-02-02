@@ -2,12 +2,14 @@ module Test.Main where
 
 import Prelude
 
+import Data.Array (slice)
 import Data.Enum (class BoundedEnum, succ, fromEnum, toEnum)
-import Data.Maybe (Maybe, fromMaybe)
-import Data.Pagination (Page, S, Z)
+import Data.Maybe (Maybe, fromMaybe, maybe)
+import Data.Natural (natToInt, intToNat)
+import Data.Page (Page(Page), S, Z, class SimpleNat)
+import Data.PagedData (PagedData(..), PageSize(..))
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
-
 
 
 -- Make a page2Of3, starting at page 2, of total size 3.
@@ -38,6 +40,34 @@ page2Of3Succ'Succ' :: Maybe (Page Nat3)
 page2Of3Succ'Succ' = succ' $ succ' page2Of3
 
 
+-- Practical example
+
+newtype User = User { firstName :: String, lastName :: String }
+instance userShow :: Show User where
+  show (User r) = "{ firstName: " <> r.firstName <> ", lastName: " <> r.lastName <> " }"
+
+users :: Array User
+users =
+  [ (User { firstName: "John", lastName: "Doe" })
+  , (User { firstName: "Alice", lastName: "Doe" })
+  , (User { firstName: "Bob", lastName: "Doe" })
+  , (User { firstName: "Carol", lastName: "Doe" })
+  ]
+
+type Nat2 = (S (S Z))
+pagedUsers :: PagedData Nat2 Array User
+pagedUsers = PagedData (Page (intToNat 0)) (PageSize (intToNat 3)) users
+
+getCurrentPage :: forall total a. PagedData total Array a -> Array a
+getCurrentPage (PagedData (Page p) (PageSize ps) as) =
+  let offset = natToInt $ p * ps
+  in slice offset (natToInt ps) as
+
+nextPage :: forall total a. SimpleNat total => PagedData total Array a -> PagedData total Array a
+nextPage (PagedData p pSize as) = maybe (f p) f (succ p)
+  where f newP = PagedData newP pSize as
+
+
 main :: Eff (console :: CONSOLE) Unit
 main = do
   logShow page2Of3
@@ -54,3 +84,5 @@ main = do
   -- (Just (Page 3 of 3))
   logShow $ ((toEnum $ fromEnum $ page2Of3) :: Maybe (Page Nat3))
   -- (Just (Page 3 of 3))
+  logShow $ pagedUsers
+ -- (PagedData 4 items, page size 3 (Page 1 of 2) )
