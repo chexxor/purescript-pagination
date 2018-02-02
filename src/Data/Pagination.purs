@@ -2,7 +2,7 @@ module Data.Pagination where
 
 import Prelude
 
-import Data.Enum (class BoundedEnum, class Enum, Cardinality(Cardinality), succ)
+import Data.Enum (class BoundedEnum, class Enum, Cardinality(Cardinality))
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Natural (Natural(), intToNat, natToInt, minus)
 import Partial.Unsafe (unsafeCrashWith)
@@ -35,10 +35,9 @@ instance pageOrd :: Ord (Page total) where
 instance pageEnum :: SimpleNat total => Enum (Page total) where
   succ :: Page total -> Maybe (Page total)
   succ (Page p) =
-    succ p >>= \succP ->
-      if succP == reflectNat (Proxy :: Proxy total)
+    if p >= reflectNat (Proxy :: Proxy total)
       then Nothing
-      else Just $ Page succP
+      else Just $ Page (p + one)
   pred :: Page total -> Maybe (Page total)
   pred (Page p) =
       -- Natural clamps to zero when (_`minus`1), so could avoid `Nothing` case.
