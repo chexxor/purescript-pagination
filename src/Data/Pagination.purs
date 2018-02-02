@@ -25,6 +25,13 @@ instance pageOrd :: Ord (Page total) where
   compare :: Page total -> Page total -> Ordering
   compare (Page p1) (Page p2) = p1 `compare` p2
 
+
+-- Enum, Bounded, and BoundedEnum instances require a type-level Natural number implementation
+
+-- ??? Use bodil's instead? Might be more efficient. Only using SimpleNat b/c is more... simple.
+-- Can define instances for bodil's typelevel Pos/Num later.
+-- https://github.com/bodil/purescript-typelevel/blob/v3.0.0/src/Data/Typelevel/Num/Sets.purs
+
 instance pageEnum :: SimpleNat total => Enum (Page total) where
   succ :: Page total -> Maybe (Page total)
   succ (Page p) =
@@ -64,13 +71,9 @@ instance pageBoundedEnum :: SimpleNat total => BoundedEnum (Page total) where
 -- succ' = fromMaybe <*> succ
 
 
--- ??? Use bodil's instead? Might be more efficient. This SimpleNat is more... simple.
--- Can define instances for bodil's typelevel Pos/Num later.
--- https://github.com/bodil/purescript-typelevel/blob/v3.0.0/src/Data/Typelevel/Num/Sets.purs
-
 -- To do: Move this to a separate lib.
 
--- Nat
+-- SimpleNat
 data Z
 data S n
 
