@@ -10,45 +10,47 @@ import Control.Monad.Eff.Console (CONSOLE, logShow)
 
 
 
--- Make a pager, starting at page 2, of total size 3.
+-- Make a page2Of3, starting at page 2, of total size 3.
 -- (Count starts at zero, as natural numbers do.)
-type PageCount = (S (S (S Z)))
-pager :: Maybe (Page PageCount)
-pager = toEnum 1
+type Nat3 = (S (S (S Z)))
+page2Of3 :: Maybe (Page Nat3)
+page2Of3 = toEnum 1
 
 -- Can go to the next page. Simply asking for the next page
 -- might fail, as it could be going past the last page, so `Maybe`.
-pagerSucc :: Maybe (Page PageCount)
-pagerSucc = pager >>= succ
-pagerSuccSucc :: Maybe (Page PageCount)
-pagerSuccSucc = pager >>= succ >>= succ
+page2Of3Succ :: Maybe (Page Nat3)
+page2Of3Succ = page2Of3 >>= succ
+page2Of3SuccSucc :: Maybe (Page Nat3)
+page2Of3SuccSucc = page2Of3 >>= succ >>= succ
 
--- Can get the current page number from the pager.
-pagerSuccPage :: Maybe Int
-pagerSuccPage = pager >>= succ <#> fromEnum
+-- Can get the current page number from the page2Of3.
+page2Of3SuccPage :: Maybe Int
+page2Of3SuccPage = page2Of3 >>= succ <#> fromEnum
 
 -- Because Page is a BoundedEnum, we can use the great helper function
 succ' :: forall a. BoundedEnum a => a -> a
 succ' = fromMaybe <*> succ
 
 --   which never goes past the end, and doesn't create a `Maybe`.
-pagerSucc' :: Maybe (Page PageCount)
-pagerSucc' = succ' pager
-pagerSucc'Succ' :: Maybe (Page PageCount)
-pagerSucc'Succ' = succ' $ succ' pager
+page2Of3Succ' :: Maybe (Page Nat3)
+page2Of3Succ' = succ' page2Of3
+page2Of3Succ'Succ' :: Maybe (Page Nat3)
+page2Of3Succ'Succ' = succ' $ succ' page2Of3
 
 
 main :: Eff (console :: CONSOLE) Unit
 main = do
-  logShow pager
-  -- (Just { current: 1, total: 3})
-  logShow pagerSucc
-  -- (Just { current: 2, total: 3})
-  logShow pagerSuccSucc
+  logShow page2Of3
+  -- (Just (Page 2 of 3))
+  logShow page2Of3Succ
+  -- (Just (Page 3 of 3)
+  logShow page2Of3SuccSucc
   -- Nothing
-  logShow pagerSuccPage
+  logShow page2Of3SuccPage
   -- (Just 2)
-  logShow pagerSucc'
-  -- (Just { current: 2, total: 3})
-  logShow pagerSucc'Succ'
-  -- (Just { current: 2, total: 3})
+  logShow page2Of3Succ'
+  -- (Just (Page 3 of 3))
+  logShow page2Of3Succ'Succ'
+  -- (Just (Page 3 of 3))
+  logShow $ ((toEnum $ fromEnum $ page2Of3) :: Maybe (Page Nat3))
+  -- (Just (Page 3 of 3))
