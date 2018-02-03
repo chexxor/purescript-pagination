@@ -7,6 +7,7 @@ import Data.Maybe (Maybe(Just, Nothing))
 import Data.Natural (Natural(), intToNat, natToInt, minus)
 import Partial.Unsafe (unsafeCrashWith)
 import Type.Proxy (Proxy(..))
+import Type.SimpleNat (class SimpleNat, reflectNat, reifyNat)
 
 
 newtype Page total = Page Natural
@@ -18,7 +19,7 @@ instance pageShow :: SimpleNat total => Show (Page total) where
 
 instance pageEq :: Eq (Page total) where
   eq :: Page total -> Page total -> Boolean
-  eq (Page p1) (Page p2) = p1`eq` p2
+  eq (Page p1) (Page p2) = p1 `eq` p2
   -- Should not need to check `total` is different, because it's type-checked to be so.
 
 instance pageOrd :: Ord (Page total) where
@@ -70,31 +71,3 @@ instance pageBoundedEnum :: SimpleNat total => BoundedEnum (Page total) where
 -- succ' = fromMaybe <*> succ
 
 
--- To do: Move this to a separate lib.
-
--- SimpleNat
-data Z
-data S n
-
-class SimpleNat n where
-  reflectNat :: Proxy n -> Natural
-
-instance natZ :: SimpleNat Z where
-  reflectNat _ = zero
-instance natInd :: SimpleNat n => SimpleNat (S n) where
-  reflectNat _ = one + reflectNat (Proxy :: Proxy n)
-
-reifyNat :: forall r. Natural -> (forall n. SimpleNat n => Proxy n -> r) -> r
-reifyNat n f | n == zero = f (Proxy :: Proxy Z)
-reifyNat n f = reifyNat (n `minus` one) (f <<< succProxy)
-  where
-    succProxy :: forall n. Proxy n -> Proxy (S n)
-    succProxy Proxy = Proxy
-
-unsafeReifyNat :: forall r. Int -> (forall n. SimpleNat n => Proxy n -> r) -> r
-unsafeReifyNat n f | n < 0 = unsafeCrashWith $ show n <> " is not a Natural number."
-unsafeReifyNat 0 f = f (Proxy :: Proxy Z)
-unsafeReifyNat n f = unsafeReifyNat (n - 1) (f <<< succProxy)
-  where
-    succProxy :: forall n. Proxy n -> Proxy (S n)
-    succProxy Proxy = Proxy

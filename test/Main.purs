@@ -6,15 +6,23 @@ import Data.Array (slice)
 import Data.Enum (class BoundedEnum, succ, fromEnum, toEnum)
 import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.Natural (natToInt, intToNat)
-import Data.Page (Page(Page), S, Z, class SimpleNat)
+import Data.Page (Page(Page))
 import Data.PagedData (PagedData(..), PageSize(..))
+import Data.Paged (Paged, mkPaged)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
+import Type.SimpleNat (S, Z, class SimpleNat)
 
 
 -- Make a page2Of3, starting at page 2, of total size 3.
 -- (Count starts at zero, as natural numbers do.)
+type Nat0 = Z
+type Nat1 = (S Z)
+type Nat2 = (S (S Z))
 type Nat3 = (S (S (S Z)))
+type Nat4 = (S (S (S (S Z))))
+type Nat5 = (S (S (S (S (S Z)))))
+type Nat6 = (S (S (S (S (S (S Z))))))
 page2Of3 :: Maybe (Page Nat3)
 page2Of3 = toEnum 1
 
@@ -54,9 +62,19 @@ users =
   , (User { firstName: "Carol", lastName: "Doe" })
   ]
 
-type Nat2 = (S (S Z))
 pagedUsers :: PagedData Nat2 Array User
 pagedUsers = PagedData (Page (intToNat 0)) (PageSize (intToNat 3)) users
+
+pagedUsers' :: String
+--pagedUsers' :: Paged Nat2 Nat2 Array User
+-- pagedUsers' :: forall count size. Paged count size Array User
+pagedUsers' = mkPaged users (intToNat 2) f
+  where
+    f :: forall count size. SimpleNat count => SimpleNat size =>
+        Paged count size Array User
+        -> String
+        -- -> Paged count size Array User
+    f paged = show paged
 
 getCurrentPage :: forall total a. PagedData total Array a -> Array a
 getCurrentPage (PagedData (Page p) (PageSize ps) as) =
@@ -86,3 +104,5 @@ main = do
   -- (Just (Page 3 of 3))
   logShow $ pagedUsers
  -- (PagedData 4 items, page size 3 (Page 1 of 2) )
+  logShow $ pagedUsers'
+  -- "(Paged 4 items, (SizedPage 2 pages, page size 2) )"
