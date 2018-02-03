@@ -30,7 +30,7 @@ instance pagedShow :: (SimpleNat count, SimpleNat size, Foldable f) =>
     "(Paged " <> show (length as :: Int)
      <> " items, "
      <> show sp
-     <> " )"
+     <> ")"
 
 instance pagedEq :: (Eq a, Eq (f a)) =>
       Eq (Paged count size f a) where

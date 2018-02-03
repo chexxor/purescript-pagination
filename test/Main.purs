@@ -2,16 +2,18 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (slice)
+import Data.Array (slice, length)
 import Data.Enum (class BoundedEnum, succ, fromEnum, toEnum)
 import Data.Maybe (Maybe, fromMaybe, maybe)
-import Data.Natural (natToInt, intToNat)
+import Data.Natural (natToInt, intToNat, Natural, minus)
 import Data.Page (Page(Page))
-import Data.PagedData (PagedData(..), PageSize(..))
-import Data.Paged (Paged, mkPaged)
+import Data.Paged (Paged(Paged), mkPaged)
+import Data.SizedPage (SizedPage(SizedPage))
+import Data.Tuple (Tuple(Tuple))
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, logShow)
-import Type.SimpleNat (S, Z, class SimpleNat)
+import Type.Proxy (Proxy(Proxy))
+import Type.SimpleNat (S, Z, class SimpleNat, reifyNat, reflectNat)
 
 
 -- Make a page2Of3, starting at page 2, of total size 3.
@@ -62,28 +64,40 @@ users =
   , (User { firstName: "Carol", lastName: "Doe" })
   ]
 
-pagedUsers :: PagedData Nat2 Array User
-pagedUsers = PagedData (Page (intToNat 0)) (PageSize (intToNat 3)) users
+--pagedUsers :: PagedData Nat2 Array User
+--pagedUsers = PagedData (Page (intToNat 0)) (PageSize (intToNat 3)) users
 
 pagedUsers' :: String
---pagedUsers' :: Paged Nat2 Nat2 Array User
--- pagedUsers' :: forall count size. Paged count size Array User
 pagedUsers' = mkPaged users (intToNat 2) f
   where
     f :: forall count size. SimpleNat count => SimpleNat size =>
-        Paged count size Array User
-        -> String
-        -- -> Paged count size Array User
+        Paged count size Array User -> String
     f paged = show paged
 
-getCurrentPage :: forall total a. PagedData total Array a -> Array a
-getCurrentPage (PagedData (Page p) (PageSize ps) as) =
-  let offset = natToInt $ p * ps
-  in slice offset (natToInt ps) as
+pagedUsers'' :: forall count size r.
+  Array User
+  -> Natural
+  -> (forall count. SimpleNat count =>
+      (Paged count Nat2 Array User) -> r
+     )
+  -> r
+pagedUsers'' as targetPage f = reifyNat (intToNat $ (length as / 2)) (f <<< f')
+  where
+  f' :: forall count. SimpleNat count => Proxy count -> Paged count Nat2 Array User
+  f' _ = Paged (Tuple (SizedPage (Page targetPage) :: SizedPage count Nat2) as)
 
-nextPage :: forall total a. SimpleNat total => PagedData total Array a -> PagedData total Array a
-nextPage (PagedData p pSize as) = maybe (f p) f (succ p)
-  where f newP = PagedData newP pSize as
+getCurrentPage :: forall total a count size.
+  SimpleNat count => SimpleNat size =>
+  Paged count size Array a -> Array a
+getCurrentPage (Paged (Tuple (SizedPage (Page page)) as)) =
+  let
+    pageSize = reflectNat (Proxy :: Proxy size)
+    offset = natToInt $ page * pageSize
+  in slice offset (offset + (natToInt pageSize)) as
+
+--nextPage :: forall total a. SimpleNat total => PagedData total Array a -> PagedData total Array a
+--nextPage (PagedData p pSize as) = maybe (f p) f (succ p)
+--  where f newP = PagedData newP pSize as
 
 
 main :: Eff (console :: CONSOLE) Unit
@@ -102,7 +116,17 @@ main = do
   -- (Just (Page 3 of 3))
   logShow $ ((toEnum $ fromEnum $ page2Of3) :: Maybe (Page Nat3))
   -- (Just (Page 3 of 3))
-  logShow $ pagedUsers
- -- (PagedData 4 items, page size 3 (Page 1 of 2) )
+  --logShow $ pagedUsers
+  -- (PagedData 4 items, page size 3 (Page 1 of 2) )
   logShow $ pagedUsers'
-  -- "(Paged 4 items, (SizedPage 2 pages, page size 2) )"
+  -- "(Paged 4 items, (SizedPage (Page 1 of 2) page size 2))"
+  --logShow $ pagedUsers'' users f
+  ---- "(Paged 4 items, (SizedPage 2 pages, page size 2) )"
+  logShow $ (pagedUsers'' users (intToNat 1) show)
+  -- "(Paged 4 items, (SizedPage (Page 2 of 2) page size 2))"
+  logShow $ (pagedUsers'' users (intToNat 0) getCurrentPage)
+  -- [{ firstName: John, lastName: Doe },{ firstName: Alice, lastName: Doe }]
+  logShow $ (pagedUsers'' users (intToNat 1) getCurrentPage)
+  -- [{ firstName: Bob, lastName: Doe },{ firstName: Carol, lastName: Doe }]
+  logShow $ (pagedUsers'' users (intToNat 2) getCurrentPage)
+  -- []

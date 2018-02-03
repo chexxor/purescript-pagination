@@ -16,8 +16,9 @@ newtype SizedPage count size = SizedPage (Page count)
 instance sizedPageShow :: (SimpleNat count, SimpleNat size) =>
       Show (SizedPage count size) where
   show (SizedPage p) =
-    "(SizedPage " <> show (reflectNat (Proxy :: Proxy count))
-    <> " pages, page size " <> show (reflectNat (Proxy :: Proxy size))
+    "(SizedPage "
+    <> show p
+    <> " page size " <> show (reflectNat (Proxy :: Proxy size))
     <> ")"
 
 derive newtype instance sizedPageEq :: Eq (SizedPage count size)
