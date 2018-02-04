@@ -48,9 +48,9 @@ instance pagedOrd :: (Eq a, Eq (f a), Ord (f a)) =>
 instance pagedEnum :: (Ord a, Ord (f a), SimpleNat count, SimpleNat size) =>
       Enum (Paged count size f a) where
   succ :: Paged count size f a -> Maybe (Paged count size f a)
-  succ (Paged (Tuple p as)) = succ p >>= \pSucc -> Just (Paged (Tuple pSucc as))
+  succ (Paged (Tuple p as)) = succ p <#> \pSucc -> Paged (Tuple pSucc as)
   pred :: Paged count size f a -> Maybe (Paged count size f a)
-  pred (Paged (Tuple p as)) = pred p >>= \pPred -> Just (Paged (Tuple pPred as))
+  pred (Paged (Tuple p as)) = pred p <#> \pPred -> Paged (Tuple pPred as)
 
 --instance pagedBounded :: (Bounded total, Bounded (f a), Bounded a, SimpleNat count, SimpleNat size) =>
 instance pagedBounded :: (Bounded (f a), Bounded a, SimpleNat count, SimpleNat size) =>
@@ -59,7 +59,6 @@ instance pagedBounded :: (Bounded (f a), Bounded a, SimpleNat count, SimpleNat s
   top = Paged (Tuple top top)
   bottom :: Paged count size f a
   bottom = Paged (Tuple bottom bottom)
-
 
 -- | Make Paged for the specified collection, using its current size
 -- |  to calculate the total number of pages.

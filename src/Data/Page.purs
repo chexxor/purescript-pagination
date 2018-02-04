@@ -15,7 +15,7 @@ newtype Page total = Page Natural
 instance pageShow :: SimpleNat total => Show (Page total) where
   show (Page p) =
     "(Page " <> show (p + one)
-    <> " of " <> (show $ reflectNat (Proxy :: Proxy total)) <> ")"
+    <> " of " <> (show $ (_ + one) $ reflectNat (Proxy :: Proxy total)) <> ")"
 
 instance pageEq :: Eq (Page total) where
   eq :: Page total -> Page total -> Boolean

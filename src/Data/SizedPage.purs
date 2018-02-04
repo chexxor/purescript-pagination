@@ -50,5 +50,5 @@ derive newtype instance sizedPageEnum :: (SimpleNat count, SimpleNat size) =>
 derive newtype instance sizedPageBounded :: (SimpleNat count, SimpleNat size) =>
     Bounded (SizedPage count size)
 
-derive newtype instance pageBoundedEnum :: (SimpleNat count, SimpleNat size) =>
+derive newtype instance sizedPageBoundedEnum :: (SimpleNat count, SimpleNat size) =>
     BoundedEnum (SizedPage count size)

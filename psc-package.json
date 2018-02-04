@@ -3,6 +3,8 @@
     "set": "psc-0.11-with-naturals",
     "source": "https://github.com/chexxor/package-sets.git",
     "depends": [
+        "transformers",
+        "machines",
         "console",
         "enums",
         "naturals",

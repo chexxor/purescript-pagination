@@ -4,6 +4,7 @@
     "clean": "rimraf output",
     "build": "psc-package build",
     "test": "psc-package sources | xargs purs compile 'src/**/*.purs' 'test/**/*.purs' && NODE_PATH=output:$NODE_PATH node -e \"require('Test.Main').main()\"",
+    "test2": "psc-package sources | xargs purs compile 'src/**/*.purs' 'test/**/*.purs' && NODE_PATH=output:$NODE_PATH node -e \"require('Test.ExampleMealyMachinePager').main()\"",
     "repl": "psc-package repl"
   },
   "devDependencies": {
