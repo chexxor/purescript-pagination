@@ -3,9 +3,9 @@ module Data.MealyMachinePager where
 import Prelude
 
 import Control.Monad.State.Class (get, put)
-import Control.Monad.State.Trans (StateT)
+import Control.Monad.State.Trans (StateT, runStateT)
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Cont.Trans (ContT)
+import Control.Monad.Cont.Trans (ContT, runContT)
 import Data.Machine.Mealy (MealyT, Step(..), halt, mealy, runMealy, singleton, stepMealy)
 import Data.Tuple (Tuple(Tuple), fst, snd)
 import Partial.Unsafe (unsafeCrashWith)
@@ -42,7 +42,41 @@ stepToTuple = case _ of
   Emit a pager -> Tuple a pager
   Halt -> unsafeCrashWith "Error: Pager should never halt, but it did."
 
+--runPager :: forall m i o.
+--  (Tuple o (Pager m i o))
+--  -> PagerMemory m i o
+--  -> (o -> m (Tuple o (Pager m i o)))
+--  -> m (Tuple o (Pager m i o))
+--runPager pager state cc = runContT cc $ runStateT pager state
 
+--runPager :: forall m i o. (PagerMonad m i o) o -> m (Tuple o (Pager m i o))
+--runPager = g <<< f <<< h <<< runStateT
+--  where
+--        h :: _
+--           ( (PagerMemory m i o)
+--            -> ContT Unit m1
+--                 (Tuple o (Fetcher m i o)
+--                 )
+--           )
+--           -> (PagerMemory m i o)
+--           -> ContT Unit m
+--               (Tuple o (PagerMemory m i o)
+--               )
+--        h = ?hh
+--        f :: ( (PagerMemory m i o)
+--               -> ContT Unit m (Tuple o (PagerMemory m i o))
+--             )
+--             -> m (Tuple o (Pager m i o))
+--        f = ?ff
+--        g :: m
+--              (Tuple o
+--                (Pager m i o)
+--              )
+--            -> m
+--                 (Tuple o
+--                   (Pager m i o)
+--                 )
+--        g = ?gg
 
 data PagerAction m i o =
   SetPaging (PagerMemory m i o)
@@ -60,7 +94,7 @@ type Paging i =
     }
 type PagingUpdater i = Paging i -> Paging i -- !!! Find a better way to do this, if it's every needed.
 type Fetcher m i o =
-  (i -> m (Tuple (PagingUpdater i) o)) -- fst is page
+  (Paging i -> m (Tuple (PagingUpdater i) o)) -- fst is page
 type PagerMemory m i o =
   Tuple
     (Paging i)
@@ -77,7 +111,7 @@ stepFn :: forall m i o.
 stepFn =
   let
     fetch :: PagerMemory m i o -> m (Tuple (PagingUpdater i) o)
-    fetch (Tuple paging fetcher) = fetcher paging.page
+    fetch (Tuple paging fetcher) = fetcher paging
     fetchUpdateMemoryAndEmit :: PagerMemory m i o -> (PagerMonad m i o) o
     fetchUpdateMemoryAndEmit memory@(Tuple paging fetcher) = do
       Tuple f a <- lift $ lift $ fetch memory

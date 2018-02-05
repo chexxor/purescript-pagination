@@ -15,83 +15,93 @@ import Data.Tuple (Tuple(Tuple))
 import Type.Proxy (Proxy(Proxy))
 import Type.SimpleNat (S, Z, class SimpleNat, reifyNat, reflectNat)
 
+--------
+-- Example database
 
 newtype User = User { firstName :: String, lastName :: String }
 
 instance userShow :: Show User where
   show (User r) = "{ firstName: " <> r.firstName <> ", lastName: " <> r.lastName <> " }"
 
+usersTable :: Array User
+usersTable =
+  [ (User { firstName: "John", lastName: "Doe" })
+  , (User { firstName: "Alice", lastName: "Jones" })
+  , (User { firstName: "Bob", lastName: "Brown" })
+  , (User { firstName: "Carol", lastName: "Dunninghamsbury-Smith" })
+  ]
+
 -- Fetch a subset of a large table stored on the server which match some query arg.
 newtype QueryResponse a = QueryResponse
   { meta :: { "total-rows" :: Int }
-  , data :: Array a
+  , data :: a
   }
 
 instance queryResponseShow :: Show a => Show (QueryResponse a) where
   show (QueryResponse j) = "{ total-rows: " <> show j.meta."total-rows"
        <> ", data: " <> show j.data <> " }"
 
-firstPageResponse :: QueryResponse User
-firstPageResponse = QueryResponse
-  { meta: { "total-rows": 100 }
-  , data:
-    [ (User { firstName: "John", lastName: "Doe" })
-    , (User { firstName: "Alice", lastName: "Jones" })
-    ]
+queryResponse :: forall a. Array a -> Int -> QueryResponse (Array a)
+queryResponse as total = QueryResponse
+  { meta: { "total-rows": total }
+  , data: as
   }
 
-secondPageResponse :: QueryResponse User
-secondPageResponse = QueryResponse
-  { meta: { "total-rows": 100 }
-  , data:
-    [ (User { firstName: "Bob", lastName: "Brown" })
-    , (User { firstName: "Carol", lastName: "Dunninghamsbury-Smith" })
-    ]
-  }
 
-fetchUsers :: forall eff. Natural -> ContT Unit (Eff eff) (QueryResponse User)
-fetchUsers offset = case natToInt offset of
-  1 -> pure firstPageResponse
-  2 -> pure secondPageResponse
-  _ -> pure $ QueryResponse { meta: { "total-rows": 0}, data: [] }
+--------
+-- Example app API to communicate with the database
 
-fetchUserPage :: Natural -> Natural -> ContT Unit (Eff eff) (QueryResponse User)
-fetchUserPage page pageSize = fetchUsers $ page * pageSize
+type MyAppMonad eff = ContT Unit (Eff eff)
+
+fetchUsers :: forall eff. Natural -> Natural -> (MyAppMonad eff) (QueryResponse (Array User))
+fetchUsers offset limit =
+  let startIndex = natToInt (offset * limit)
+      endIndex = startIndex + (natToInt limit)
+  in pure $ queryResponse (slice startIndex endIndex usersTable) (length usersTable)
 
 
-queryResponseToPagerTuple :: forall o.
-  QueryResponse o
-  -> Tuple (PagingUpdater Natural) o
-queryResponseToPagerTuple (QueryResponse res) =
-  let divNat nn nd = intToNat (natToInt nn  / natToInt nd)
-      f p =
-        -- Update the page count to reflect the now-known response total.
-        let offset = p.size * p.page
-        in p { count = intToNat $ res.meta."total-rows" `div` (natToInt p.size) }
-  in Tuple f res.data
+--------
+-- Communicate with the API through a MealyPager
+
+userPageFetcher :: forall eff.
+  Paging Natural
+  -> (MyAppMonad eff) (Tuple (PagingUpdater Natural) (Array User))
+userPageFetcher paging =
+  queryResponseToPagerTuple <$> fetchUsers (paging.page * paging.size) paging.size
+  where
+  queryResponseToPagerTuple :: forall o.
+    QueryResponse o
+    -> Tuple (PagingUpdater Natural) o
+  queryResponseToPagerTuple (QueryResponse res) =
+    let --divNat nn nd = intToNat (natToInt nn  / natToInt nd)
+        f :: PagingUpdater Natural
+        f p = p
+          -- Update the page count to reflect the now-known response total.
+          --let offset = p.size * p.page
+          --in p { count = intToNat $ res.meta."total-rows" `div` (natToInt p.size) }
+          --in p
+    in (Tuple f res.data) -- res.data
 
 
+--------
+-- Example using MealyPager
 
-main :: Eff (console :: CONSOLE) Unit
-main = do
-  firstPage <- fetchUsers 1 -- "GET /users?page[number]=1&page[size]=2 HTTP/1.1"
-  logShow $ firstPage
-  secondPage <- fetchUsers 2 -- "GET /users?page[number]=2&page[size]=2 HTTP/1.1"
-  logShow $ secondPage
-
+--main :: Eff (console :: CONSOLE) Unit
+--main = do
+--  firstPage <- fetchUsers 1 -- "GET /users?page[number]=1&page[size]=2 HTTP/1.1"
+--  logShow $ firstPage
+--  secondPage <- fetchUsers 2 -- "GET /users?page[number]=2&page[size]=2 HTTP/1.1"
+--  logShow $ secondPage
 
 main2 :: Eff (console :: CONSOLE) Unit
 main2 = do
-  -- flip runContT (\res -> pure unit )
-  -- $ flip evalStateT initialMemory
-  -- $ stepMealy (mealy stepFn)
+  runPager fetchPage
   Tuple o pager <- fetchPage
     { page: zero
     , count: zero
     , size: intToNat 2
     , minus: minus
     }
-    queryResponseToPagerTuple
-  logShow o
--- main2 = runContT do
---   firstPage <- fetchPage pagedUserFetcher
+    userPageFetcher
+  --logShow o
+  pure unit
