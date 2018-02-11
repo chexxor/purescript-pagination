@@ -4,6 +4,7 @@ An attempt to make a more type-safe paginator using PureScript idioms.
 This is an experimental project, but it might still be useable for someone.
 
 Intro slides: https://docs.google.com/presentation/d/1TTGAY0yBKJhYxgiy_Cca9fzq7JX-AHXGT9VvHL4dkQ4/edit?usp=sharing
+
 Overview talk: https://www.youtube.com/watch?v=s1ADsjLIi-U
 
 Status:
