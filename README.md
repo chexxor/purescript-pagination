@@ -3,6 +3,9 @@
 An attempt to make a more type-safe paginator using PureScript idioms.
 This is an experimental project, but it might still be useable for someone.
 
+Intro slides: https://docs.google.com/presentation/d/1TTGAY0yBKJhYxgiy_Cca9fzq7JX-AHXGT9VvHL4dkQ4/edit?usp=sharing
+Overview talk: https://www.youtube.com/watch?v=s1ADsjLIi-U
+
 Status:
 - Type-level paging: The design seems ok, but it hasn't been tested too much yet and the lawfulness of the typeclasses haven't been checked. This design feels like a heavy hammer (type-level checking of page count and sizes) for a relatively simple problem.
 - Machine paging: The design feels better than type-level paging. This one feels heavy, but perhaps it's because it uses a StateT and ContT monad. It could be trimmed up a bit. The test case needs to be finished - I couldn't figure out how to run the transformers, `PagerMonad m -> m`.
